@@ -26,7 +26,7 @@ sqlite_execute: UPDATE settings SET value = 'Gulf Coast Septic' WHERE key = 'bus
 sqlite_execute: UPDATE settings SET value = '-04:00' WHERE key = 'timezone_offset';
 ```
 
-> Saved. I'll schedule everything in Eastern time (-04:00). You don't have a Service Manifest form yet; it's free to create and every stop will come back with gallons, tank condition, hatch photos, disposal site, and waste type. No signature — this is an internal stop record, not an official hazardous-waste e-manifest and not a state pumping report. Want me to set it up now?
+> Saved. I'll schedule everything in Eastern time (-04:00). You don't have a Service Manifest form yet; it's free to create and every stop will come back with gallons, tank condition, hatch photos, disposal site, and waste type. No signature — this is an internal stop record, not a TCEQ / city FOG trip ticket, not a UK waste transfer note, not a 40 CFR 503 record, and not a grease-trap health-department ticket. Want me to set it up now?
 
 Owner: *"yes"*
 
@@ -40,7 +40,7 @@ form_create:
 ```json
 [
   {"type": "section", "label": "Service manifest", "identifier": "sec_manifest",
-   "text": "Fill this in before you leave. Hatch photos help. This is an internal stop record, not an official hazardous-waste e-manifest and not a state pumping report."},
+   "text": "Fill this in before you leave. Hatch photos help. This is an internal stop record, not a TCEQ / city FOG trip ticket, not a UK waste transfer note (WTN), not a 40 CFR 503 land-application record, and not a grease-trap health-department ticket."},
   {"type": "number", "label": "Gallons pulled", "identifier": "gallons", "required": true},
   {"type": "select", "label": "Tank condition", "identifier": "tank_condition", "required": true,
    "options": ["Good", "Fair", "Needs repair", "Inaccessible"]},
@@ -89,7 +89,7 @@ Owner: *"yes"*
 
 ```
 location_create:
-  name: "Rosa Delgado - 1842 Palmetto Court"
+  name: "1842 Palmetto Court, Tampa"
   street_address: "1842 Palmetto Court, Tampa, FL 33609"
   checkin_radius_m: 75
   idempotency_key: "loc-tank-1"
@@ -97,7 +97,7 @@ location_create:
     billing: { meter: "geocode", units: 1, price: 0.03 }
 ```
 
-The hatch location and gate code are **not** in `notes`. They live only in `tanks.access_notes`. `checkin_radius_m` on the location is informational; the enforced radius is the policy (see later if Luis misses a punch).
+The hatch location and gate code are **not** in `notes`, and Rosa's name is **not** in the location `name`: ZenSched gets the street address only; the customer record stays in SQLite. `checkin_radius_m` on the location is informational; the enforced radius is the policy (see later if Luis misses a punch).
 
 ```
 event_create:
@@ -144,7 +144,7 @@ sqlite_execute:
   → lastInsertRowid = 2
 
 location_create:
-  name: "Harbor Diner - 410 Bayshore Blvd"
+  name: "410 Bayshore Blvd, Tampa"
   street_address: "410 Bayshore Blvd, Tampa, FL 33606"
   checkin_radius_m: 75
   idempotency_key: "loc-tank-2"
@@ -165,7 +165,7 @@ sqlite_execute:
   WHERE tank_id = 2;
 ```
 
-> Added Harbor Diner, 410 Bayshore Blvd. Quarterly grease trap at $225, Tuesday Sep 8 at 11:00. Dumpster / rear-lot note is local only. This Service Manifest is not an official e-manifest; keep whatever the plant wants on their ticket.
+> Added Harbor Diner, 410 Bayshore Blvd. Quarterly grease trap at $225, Tuesday Sep 8 at 11:00. Dumpster / rear-lot note is local only; the ZenSched label is the street, not the diner name. This Service Manifest is not a TCEQ ticket, WTN, 503 record, or grease-trap health form; keep whatever the plant wants on their ticket.
 
 ## "Invite Luis Ortega, luis@example.com, and make him the default."
 
@@ -286,15 +286,20 @@ form_export:
         data: { gallons: 1250, tank_condition: "good",
                 disposal_site: "Hillsborough County WW plant, ticket 4412",
                 waste_type: "septic" },
-        media: [ { cdn_url: "https://cdn.zensched.com/m/.../d1.jpg" },
-                 { cdn_url: "https://cdn.zensched.com/m/.../d2.jpg" } ] },
+        media: [ { field_id: 4, cdn_url: "https://cdn.zensched.com/m/.../d1.jpg",
+                   thumbnail_url: "https://cdn.zensched.com/m/.../d1_thumb.jpg", original_filename: "d1.jpg" },
+                 { field_id: 4, cdn_url: "https://cdn.zensched.com/m/.../d2.jpg",
+                   thumbnail_url: "https://cdn.zensched.com/m/.../d2_thumb.jpg", original_filename: "d2.jpg" } ] },
       { submission_id: 4402, worker_id: 601, event_id: 7102, submitted_at: "2026-09-08 11:44:40",
         data: { gallons: 280, tank_condition: "fair",
                 disposal_site: "Hillsborough County WW plant, ticket 4418",
                 waste_type: "grease" },
-        media: [ { cdn_url: "https://cdn.zensched.com/m/.../c1.jpg" },
-                 { cdn_url: "https://cdn.zensched.com/m/.../c2.jpg" },
-                 { cdn_url: "https://cdn.zensched.com/m/.../c3.jpg" } ] }
+        media: [ { field_id: 4, cdn_url: "https://cdn.zensched.com/m/.../c1.jpg",
+                   thumbnail_url: "https://cdn.zensched.com/m/.../c1_thumb.jpg", original_filename: "c1.jpg" },
+                 { field_id: 4, cdn_url: "https://cdn.zensched.com/m/.../c2.jpg",
+                   thumbnail_url: "https://cdn.zensched.com/m/.../c2_thumb.jpg", original_filename: "c2.jpg" },
+                 { field_id: 4, cdn_url: "https://cdn.zensched.com/m/.../c3.jpg",
+                   thumbnail_url: "https://cdn.zensched.com/m/.../c3_thumb.jpg", original_filename: "c3.jpg" } ] }
     ]
     billing: { meter: "form_media", units: 2, price: 0.30 }
 
@@ -334,7 +339,7 @@ sqlite_execute:
 >
 > Delgado septic: 1,250 gal, Good, Hillsborough County WW plant. Next due Mar 6 (semi, +180 days).
 >
-> Harbor Diner grease: 280 gal, Fair, same plant. Next due Dec 7. This is your copy from the Service Manifest, not an official e-manifest.
+> Harbor Diner grease: 280 gal, Fair, same plant. Next due Dec 7. This is your copy from the Service Manifest, not a TCEQ ticket, WTN, 503 record, or grease-trap health form.
 
 ## "Pump log for last week."
 
@@ -346,7 +351,7 @@ sqlite_query: SELECT * FROM pump_log WHERE pump_date BETWEEN '2026-09-07' AND '2
     | Hillsborough County WW plant, ticket 4412 | Good | Luis Ortega
 ```
 
-> Your copy from the Service Manifest — not an official e-manifest:
+> Your copy from the Service Manifest — not a TCEQ ticket, WTN, 503 record, or grease-trap health form:
 >
 > | Date | Tank | Gallons | Waste | Disposal | Condition | Tech |
 > |---|---|---|---|---|---|---|
@@ -420,7 +425,13 @@ sqlite_execute: UPDATE invoices SET paid = 1, paid_date = date('now') WHERE invo
 
 ## Eight weeks later: "Schedule this week."
 
-Neither account is due yet (Delgado next Mar 6, Harbor Diner next Dec 7). If the owner added an emergency, or a tank's event is about to expire while a stop is coming up:
+Neither account is due yet (Delgado next Mar 6, Harbor Diner next Dec 7). Daylight-saving time ended on Nov 1, 2026 and does not start again until Mar 14, 2027, so Eastern is `-05:00` through that March stop. The agent updates the stored offset **before** reading `customers_due` (rule 8); otherwise the view would still emit `-04:00` and the March shift would land an hour early.
+
+```
+sqlite_execute: UPDATE settings SET value = '-05:00' WHERE key = 'timezone_offset';
+```
+
+If the owner added an emergency, or a tank's event is about to expire while a stop is coming up:
 
 ```
 sqlite_query: SELECT * FROM events_expiring;
@@ -441,18 +452,18 @@ event_create:
 form_assign: form_id 401, event_id 7201, idempotency_key "assign-service-manifest-7201"
 sqlite_execute: UPDATE tanks SET zensched_event_id = 7201, event_valid_until = '2027-05-04' WHERE tank_id = 1;
 
-shift_create: event_id 7201, worker_id 601, start "2027-03-06T09:00:00-04:00",
-              end "2027-03-06T10:30:00-04:00", idempotency_key "shift-tank-1-20270306"
+shift_create: event_id 7201, worker_id 601, start "2027-03-06T09:00:00-05:00",
+              end "2027-03-06T10:30:00-05:00", idempotency_key "shift-tank-1-20270306"
 ```
 
-> Scheduled Delgado for Sat Mar 6 9:00. Her ZenSched event from September had expired, so I renewed it through May 4. Harbor Diner is not due until December.
+> Scheduled Delgado for Sat Mar 6 9:00 (Eastern standard, `-05:00` — DST starts Mar 14). Her ZenSched event from September had expired, so I renewed it through May 4. Harbor Diner is not due until December.
 
 ## Summary of who stored what
 
 | Thing | Where | Why |
 |---|---|---|
 | Rosa's contact, $375 semi cadence, Harbor Diner $225 quarterly, prices | SQLite | CRM; ZenSched does not model rates or recurrence |
-| Hatch location, gate code, pumper / hauler license | SQLite **only** | Privacy; never sent to ZenSched |
+| Hatch location, gate code, pumper / hauler license, customer names / phones / emails | SQLite **only** | Privacy; never sent to ZenSched (locations and events are named by street address) |
 | Each tank's GPS location | ZenSched (integer ID in `tanks`) | Needed for geofenced check-in |
 | Each tank's current ≤60-day event and its end date | ZenSched (integer ID + `event_valid_until` in `tanks`) | Shifts hang off events; renewed by the agent |
 | The Service Manifest form | ZenSched (ID in `settings`) | Installed on the tech's phone per shift |
