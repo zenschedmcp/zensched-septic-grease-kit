@@ -4,7 +4,7 @@ Setup is about 15 minutes, once. After that everything is plain English to your 
 
 You need: Claude Desktop (or Cursor) and [Node.js LTS](https://nodejs.org/) installed. Nothing else.
 
-Before you start, read the "What this kit is not" section of `README.md`. Short version: this is GPS-verified route proof plus a local extract of the Service Manifest. It is **not** an official hazardous-waste e-manifest and **not** a state pumping report.
+Before you start, read the "What this kit is not" section of `README.md`. Short version: this is GPS-verified route proof plus a local extract of the Service Manifest. It is **not** a TCEQ / city FOG trip ticket, **not** a UK waste transfer note (WTN), **not** a 40 CFR 503 land-application record, and **not** a grease-trap health-department ticket.
 
 ## 1. Make a data folder
 
@@ -87,7 +87,7 @@ The AI reads `customers_due`, creates one shift per stop on ZenSched, and summar
 
 > Record this week's jobs, show me the pump log, then draft invoices for anyone with uninvoiced work.
 
-The AI pulls the completed, GPS-verified shifts and the Service Manifests from ZenSched (reading records is metered, so it tells you the cost first), saves a per-job summary, advances Harbor Diner +90 days and Delgado +180 days, shows the pump-log extract (your copy, not an official e-manifest), creates invoice records, and writes out each invoice as text you can paste into an email.
+The AI pulls the completed, GPS-verified shifts and the Service Manifests from ZenSched (reading records is metered, so it tells you the cost first), saves a per-job summary, advances Harbor Diner +90 days and Delgado +180 days, shows the pump-log extract (your copy, not a TCEQ ticket / WTN / 503 book), creates invoice records, and writes out each invoice as text you can paste into an email.
 
 > Rosa paid INV-2026-0001.
 

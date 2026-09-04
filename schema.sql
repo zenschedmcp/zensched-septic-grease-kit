@@ -16,16 +16,20 @@
 -- Every statement is idempotent (IF NOT EXISTS / INSERT OR IGNORE), so it is
 -- safe to run this file again on an existing database.
 --
--- NOT AN OFFICIAL E-MANIFEST. pump_log is the owner's local extract from the
--- Service Manifest (date, tank, gallons, waste type, disposal site, condition,
--- tech). It is not a hazardous-waste e-manifest (EPA e-Manifest / RCRA), not
--- a state pumping report, and not a hauler trip ticket. Licensed pumpers still
--- keep whatever their state and disposal facility require, on their own forms.
+-- NOT A TCEQ / WTN / 503 / GREASE-TRAP HEALTH TICKET. pump_log is the owner's
+-- local extract from the Service Manifest (date, tank, gallons, waste type,
+-- disposal site, condition, tech). It is not a TCEQ five-part ticket
+-- (30 TAC 312.145), not a city FOG / grease-trap health-department manifest,
+-- not a UK waste transfer note (WTN), not a 40 CFR 503 land-application
+-- record, and not an EPA e-Manifest / RCRA shipping paper. Licensed pumpers
+-- still keep whatever their state, city FOG program, or disposal facility
+-- require, on their own forms.
 --
 -- PRIVACY: tanks.access_notes (hatch location, gate, dog, alarm) and
 -- technicians.license_no (pumper / hauler number) live ONLY in this file on
--- your computer. They are never sent to ZenSched. SKILL.md forbids the agent
--- from putting them in any ZenSched notes field.
+-- your computer. They are never sent to ZenSched. Customer names stay in
+-- SQLite; ZenSched location labels are street + city. SKILL.md forbids the
+-- agent from putting them in any ZenSched notes field.
 
 -- Foreign keys are OFF by default in SQLite. This must be run once per
 -- connection for ON DELETE CASCADE to work. SKILL.md tells the agent to run it
@@ -366,8 +370,9 @@ WHERE i.paid = 0
 ORDER BY i.due_date;
 
 -- Owner's local pump-log extract: one row per pumped visit. This is the
--- owner's copy, not a hazardous-waste e-manifest and not a state pumping
--- report. Visits with no gallons (inspect-only / inaccessible) are omitted.
+-- owner's copy, not a TCEQ trip ticket, WTN, 40 CFR 503 record, or
+-- grease-trap health-department ticket. Visits with no gallons
+-- (inspect-only / inaccessible) are omitted.
 CREATE VIEW IF NOT EXISTS pump_log AS
 SELECT
   j.job_id,

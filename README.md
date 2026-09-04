@@ -12,7 +12,7 @@ If you *are* a developer, skip to [For developers](#for-developers).
 
 **What it is not:**
 
-- **Not an official hazardous-waste e-manifest.** `pump_log` is *your* copy of what the tech typed on the phone (date, tank, gallons, waste type, disposal site, condition, tech). It is not an EPA e-Manifest / RCRA shipping paper, not a hauler trip ticket, and not a substitute for whatever your county health department or disposal plant requires you to keep. This kit does not produce those forms and does not claim you are compliant because you used it.
+- **Not a TCEQ trip ticket, UK waste transfer note, 40 CFR 503 record, or grease-trap health ticket.** `pump_log` is *your* copy of what the tech typed on the phone (date, tank, gallons, waste type, disposal site, condition, tech). It is not a TCEQ five-part ticket (30 TAC 312.145), not a city FOG / grease-trap health-department manifest, not a UK Duty of Care waste transfer note (WTN), not a 40 CFR 503 land-application record, and not an EPA e-Manifest / RCRA shipping paper. This kit does not produce those forms, does not file FOGMan or Digital Waste Tracking, and does not claim you are compliant because you used it.
 - **Not a state pumping report.** Florida DOH, Texas TCEQ, and every other state still want *their* form when they want one. File that separately.
 - **Not a signed legal document.** The Service Manifest has no signature field. On ZenSched a signature field replaces the Submit button, so adding one would make every stop look like the tech (or the customer) had signed something. Submitting the form is just submitting the form.
 
@@ -43,7 +43,7 @@ If any of those is a deal-breaker, this kit is not for you. If you want route ca
 
 ### Privacy note
 
-Hatch locations, gate codes, alarm words, and pumper / hauler license numbers are stored only in `tanks.access_notes` and `technicians.license_no` in the local database. `SKILL.md` forbids the AI from putting them into any ZenSched field. Give them to your tech yourself, by whatever channel you trust. ZenSched only ever sees the street address and the GPS pin.
+Hatch locations, gate codes, alarm words, and pumper / hauler license numbers are stored only in `tanks.access_notes` and `technicians.license_no` in the local database. `SKILL.md` forbids the AI from putting them into any ZenSched field. Give them to your tech yourself, by whatever channel you trust. Customer names, phones, and emails also stay local: ZenSched locations and events are named by street address (`1842 Palmetto Court, Tampa`), so ZenSched only ever sees the street address and the GPS pin.
 
 ## How it works day to day
 
@@ -133,7 +133,7 @@ Paste the contents of `SKILL.md` into your AI tool as standing instructions. In 
 
 It writes those to the `settings` table, creates the Service Manifest form on ZenSched (free), and saves the form id so every stop gets it automatically.
 
-**Check-in radius.** The default pin uses `checkin_radius_m=75` on `location_create`, but ZenSched **enforces** the radius through the account's policy, not per tank. With geofencing on it raises anything under 100 m to about 91 m (300 ft), so 75 behaves as roughly a house-and-driveway circle. For a rural tank, a restaurant rear lot, or a pin that lands on the road, ask the AI to "set the check-in radius to 200 m" (`policy_update`) or to move the pin onto the hatch (`location_update`, free). Do not ask it to widen the radius "on that location" — that field is informational only.
+**Check-in radius.** The default pin uses `checkin_radius_m=75` on `location_create`, but ZenSched **enforces** the radius through the account's policy, not per tank. With geofencing on it raises anything under 100 m to about 91 m (300 ft), so 75 behaves as roughly a house-and-driveway circle. For a rural tank, a restaurant rear lot, or a pin that lands on the road, ask the AI to "set the check-in radius to 200 m" (`policy_update(0, {"checkin_radius_m": 200})`) or to move the pin onto the hatch (`location_update`, free). Do not ask it to widen the radius "on that location" — that field is informational only.
 
 ### 6. Funding (only when asked)
 
@@ -179,14 +179,14 @@ When you invite a technician, they get an email, install the app, and can immedi
 | `SQLITE_PATH` points nowhere / "unable to open database" | Folder from step 1 does not exist | Create the folder; the file is created automatically but the folder is not |
 | ZenSched tools return an auth error | Key still says `zsc_your_key_here`, or was pasted with a space | Re-paste the key, restart |
 | `payment_required` | Metered call with no balance | Follow the instructions in the response; $5 deposit |
-| AI creates shifts at the wrong hour | Timezone not set | "Set my timezone offset to -04:00 in settings" (use your own offset) |
+| AI creates shifts at the wrong hour | Timezone not set, or the clocks changed (DST) | "Set my timezone offset to -04:00 in settings" (use your own offset; Eastern is `-04:00` in summer and `-05:00` in winter) |
 | Shift creation fails for dates a couple of months out | The tank's 60-day ZenSched event has expired | Say "renew the events"; the AI runs the roll-over in `SKILL.md` and retries |
-| Tech's check-in not GPS-verified at a house | Geocoded pin is at the mailbox, tech parked far away, or a rural lot | Ask the AI to widen `checkin_radius_m` with `policy_update` (not on the location), or run `location_update` / `location_refine` ($0.10) |
+| Tech's check-in not GPS-verified at a house | Geocoded pin is at the mailbox, tech parked far away, or a rural lot | Ask the AI to widen the radius with `policy_update(0, {"checkin_radius_m": N})` (not on the location), or run `location_update` / `location_refine` ($0.10) |
 | Tech does not see the Service Manifest | Form not assigned to that tank's event | "Attach the Service Manifest to Delgado's event" (`form_assign`) |
 | "Pump log" comes back empty | Jobs not recorded yet, or the tech entered 0 gallons (inspect-only / inaccessible) | "Record this week's jobs" first; zero-gallon rows are omitted on purpose |
 | AI asks you to run SQL yourself | It does not have `SKILL.md` loaded | Re-paste `SKILL.md` as project instructions |
 | AI refuses to put a hatch location in ZenSched | Working as intended | Give it to the tech directly |
-| AI offers an official e-manifest or a state pumping form | It shouldn't | This kit does not produce those; use your state / plant form |
+| AI offers a TCEQ ticket, WTN, 503 book, or grease-trap health form | It shouldn't | This kit does not produce those; use your state / city FOG / plant form |
 
 If something is confusing or broken in ZenSched itself, ask the AI to call `feedback_submit` with a description. It is free, needs no account, and a human reads every submission.
 
@@ -196,7 +196,7 @@ If something is confusing or broken in ZenSched itself, ask the AI to call `feed
 
 **Data model decisions.**
 
-- One ZenSched **location** per tank (the place), permanent, stored on `tanks.zensched_location_id` as an integer. Created with `location_create(name, street_address=..., checkin_radius_m=75, idempotency_key=...)`. `checkin_radius_m` on `location_create` is informational; the enforced radius is `policy_update(0, '{"checkin_radius_m": N}')`, and with geofencing on the platform raises values under 100 m to 300 ft.
+- One ZenSched **location** per tank (the place), permanent, stored on `tanks.zensched_location_id` as an integer. Created with `location_create(name="<street>, <city>", street_address=..., checkin_radius_m=75, idempotency_key=...)`; the name is the street address, never the customer's name (customer PII stays in SQLite). `checkin_radius_m` on `location_create` is informational; the enforced radius is `policy_update(0, {"checkin_radius_m": N})`, and with geofencing on the platform raises values under 100 m to 300 ft.
 - **Events are capped at 60 days by ZenSched**, so an event cannot be a permanent job template. Each tank holds its *current* event in `tanks.zensched_event_id` and its last covered date in `tanks.event_valid_until`. The agent creates a new event (`event_create(location_id, title="Tank service - <street>", start_date, end_date=start+59 days, idempotency_key="event-tank-{tank_id}-{YYYYMMDD}")`) whenever a shift date is later than `event_valid_until`, calls `form_assign(form_id, event_id=...)` on it, and updates the row. `customers_due` exposes `event_needs_roll` per row and `events_expiring` lists tanks due for renewal within 14 days. Shifts already created on the old event remain valid. When recording a completed job whose `event_id` no longer matches a tank, the agent falls back to `event_get(event_id).location_id` against `tanks.zensched_location_id`.
 - **Cadence is next-service-date, not a weekday mask.** `customers.service_frequency` is `quarterly | semi | on-demand`. `customers_due` is every active customer with `next_service_date <= today+7` joined to their active tanks, emitting `start_iso` / `end_iso` (preferred start or `settings.default_shift_start`, duration from the service or `default_shift_minutes`) and the shift `idempotency_key`. A customer with two active tanks produces two rows on the same due date.
 - **The `advance_service_date_on_job` trigger** sets `last_service_date` and `next_service_date` on every job insert: **+90 days** / **+180 days** / NULL. Quarterly is +90 days, not `+3 months`; semi is +180 days, not `+6 months`, so the interval does not drift with month length. Recording a one-off on a recurring customer also moves the cadence; `SKILL.md` tells the agent to set the date back if the owner says so.
@@ -204,8 +204,8 @@ If something is confusing or broken in ZenSched itself, ask the AI to call `feed
 - `jobs.zensched_shift_id` and `technicians.zensched_worker_id` are integer `UNIQUE`. `jobs.report_dc_id` holds the form `submission_id`. `tank_condition` and `waste_type` are `CHECK`-constrained to the form's option labels. `gallons` is the number from the form.
 - `fill_job_technician` sets `technician_id` from `zensched_worker_id` when the agent leaves it NULL.
 - `invoices.invoice_number` is auto-assigned by trigger as `{prefix}-{YYYY}-{0001}`.
-- **`pump_log`** is a view over pumped jobs (omits `gallons` NULL or ≤ 0). One row per job. It does not transmit anything and is not an official e-manifest.
-- `tanks.access_notes` and `technicians.license_no` are the columns that must never be sent to ZenSched; `SKILL.md` rule 6 enforces it. `customers_due` still *selects* `access_notes` so the agent can tell the owner to pass them to the tech.
+- **`pump_log`** is a view over pumped jobs (omits `gallons` NULL or ≤ 0). One row per job. It does not transmit anything and is not a TCEQ ticket, WTN, 503 record, or grease-trap health form.
+- `tanks.access_notes` and `technicians.license_no` are the columns that must never be sent to ZenSched; `SKILL.md` rule 6 also keeps customer names, phones, and emails in SQLite (locations and events are named by street). `customers_due` still *selects* `access_notes` so the agent can tell the owner to pass them to the tech.
 - `PRAGMA foreign_keys = ON` is in `schema.sql` and `SKILL.md` tells the agent to run it per session; SQLite does not persist it.
 
 **Service Manifest form.** Created once with `form_create(title, fields_json, idempotency_key="form-service-manifest")`; the exact `fields_json` is in `SKILL.md` and `example-workflow.md` (byte-identical) and was validated against ZenSched's `_validate_fields`. Every field carries an explicit `identifier` so submission `data` keys are stable (`gallons`, `tank_condition`, `hatch`, `disposal_site`, `waste_type`; section `sec_manifest`). Option keys are derived by ZenSched from the labels (lowercase, non-alphanumerics → `_`, truncated at 30 characters); every option here is well under 30 characters, so nothing truncates. **No `signature` field** — the phone keeps a Submit button, and submitting is not a legal attestation. Attaching is `form_assign(form_id, event_id=...)`.
@@ -220,7 +220,7 @@ If something is confusing or broken in ZenSched itself, ask the AI to call `feed
 
 ZenSched caches idempotent responses for 24 hours.
 
-**Timestamps.** `shift_create` takes `start` and `end` in ISO 8601 with an explicit offset. Always use the business's local offset from `settings.timezone_offset` (e.g. `2026-09-07T09:00:00-04:00`), never `Z`. The view builds these strings so the agent does not have to.
+**Timestamps.** `shift_create` takes `start` and `end` in ISO 8601 with an explicit offset. Always use the business's local offset from `settings.timezone_offset` (e.g. `2026-09-07T09:00:00-04:00`), never `Z`. The view builds these strings so the agent does not have to. The offset is a single stored value, so `SKILL.md` has the agent update it when DST starts or ends (Eastern: `-04:00` → `-05:00` in November); otherwise every shift after the change is an hour off.
 
 **Metered reads.** `form_submissions` and `form_export` bill $0.05 per submission read ($0.15 with media); `form_export` is preferred for a week at a time. The kit stores the summary and media URLs on `jobs` on first read so later pump-log questions are answered from SQLite. `shift_list`, `shift_status`, `event_get`, and `timesheet_export(mode="hours"|"raw")` are free.
 
